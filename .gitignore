@@ -11,3 +11,8 @@ renv/python/
 .DS_Store
 Thumbs.db
 .Rproj.user
+
+# External Repos
+bayespop_workshop/
+bayesRecon/
+BayesianReconciliation/
