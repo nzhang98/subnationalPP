@@ -33,7 +33,7 @@ nat.tfr.dir <- "data/wpp2024_projections/TFR1unc/sim20241101"
 
 subnat.tfr.dir <- "results/tfr"
 
-start_year = 2024
+start_year = 2014
 tfr.preds <- tfr.predict.subnat(840, my.tfr.file = my.tfr.file,
                                 sim.dir = nat.tfr.dir, output.dir = subnat.tfr.dir,
                                 annual = TRUE, start.year = start_year, end.year = 2100,
@@ -113,7 +113,7 @@ exclude.codes <- c(53001, 53003, 53013, 53019, 53023, 53039,
 subnat.mig.dir <- "results/mig"
 mc <- run.mig.mcmc(nr.chains = 3, iter = 5000, 
                    output.dir = subnat.mig.dir,
-                   present.year = 2023, start.year = 1990, 
+                   present.year = 2013, start.year = 1990, 
                    my.mig.file = my.mig.file,  annual = TRUE,
                    exclude.from.world = exclude.codes,
                    replace.output = TRUE, verbose.iter = 1000)
@@ -155,7 +155,7 @@ subnat.pop.dir <- "results/pop"
 pop.subnat <- pop.predict.subnat(output.dir = subnat.pop.dir,
                                  locations = location.file, default.country = 840, 
                                  verbose = TRUE, annual = TRUE, wpp.year = 2024, 
-                                 present.year = 2023, end.year = 2050,
+                                 present.year = 2013, end.year = 2050,
                                  nr.traj = 100, replace.output = TRUE,
                                  inputs = list(
                                    popM = popM0.file, popF = popF0.file,
