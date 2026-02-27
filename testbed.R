@@ -227,7 +227,7 @@ sum(get.pop.ex("P53033[20:64] / P53033[65:130] < 3", pop.subnat)["2050", ]
 ) / pop.subnat$nr.traj * 100
 
 
-get.pop.ex("B53033[30]", pop.subnat)
+get.pop.ex("B53033_F[30]", pop.subnat, observed = TRUE)
 get.pop.ex("D53033_M[131]", pop.subnat)
 get.pop.exba("G53033_F{10:20}", pop.subnat)
 get.pop.ex("G53033_F[10]", pop.subnat)

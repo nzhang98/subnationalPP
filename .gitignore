@@ -13,6 +13,13 @@ renv/python/
 Thumbs.db
 .Rproj.user
 
+# Testing scripts
+testbed.R
+forecast_reconciliation_test.R
+
+# Temp data files
+data/temp
+
 # External Repos
 bayespop_workshop/
 bayesRecon/
