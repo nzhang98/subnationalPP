@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 .RDataTmp
+.Rprofile
 
 # renv
 renv/library/
@@ -12,6 +13,7 @@ renv/python/
 .DS_Store
 Thumbs.db
 .Rproj.user
+SubnationalPP.Rproj
 
 # Testing scripts
 testbed.R
