@@ -1,11 +1,18 @@
+library(quadprog) # to solve QP
+library(MASS) # for generalised inverse
+
+# Script to perform Forecast Reconciliation: Example 1
+# Forecast Reconciliation with different reconciliation solutions, simplified example with no age-sex groupings
+# Datasets for this script are obtained with "extract_data.R"
+
 # Aggregates
-
-N_rc = t(agg.pop[, as.character(2014:2023)])
-colnames(N_rc) = paste0("dN_", colnames(N_rc))
-N_rc = cbind(dN_tot = rowSums(N_rc), N_rc)
-
-Y_base = cbind(N_rc, b_base)[as.character(2016:2023),]
-colnames(Y_base) = colnames(Y_obs)
+# 
+# N_rc = t(agg.pop[, as.character(2014:2023)])
+# colnames(N_rc) = paste0("dN_", colnames(N_rc))
+# N_rc = cbind(dN_tot = rowSums(N_rc), N_rc)
+# 
+# Y_base = cbind(N_rc, b_base)[as.character(2016:2023),]
+# colnames(Y_base) = colnames(Y_obs)
 ################################################################
 # Fcast error (in-sample)
 
@@ -50,8 +57,6 @@ Y_rec_OLS = as.data.frame(Y_rec_OLS)
 
 # OLS - non-negative constraints
 
-library(quadprog)
-
 Ymat = as.matrix(Y_base)
 
 Tn = nrow(Ymat)
@@ -62,15 +67,15 @@ Dmat = Dmat + 1e-20 * diag(m)   # small ridge for numerical stability
 bvec = rep(0, ncol(Amat))
 
 ## Compute bottom-level reconciled
-b_rec_OLSnn <- matrix(NA, nrow = Tn, ncol = m)
+b_rec_OLSnn = matrix(NA, nrow = Tn, ncol = m)
 
 for (t in 1:Tn) {
   
-  yhat <- Ymat[t, ]
+  yhat = Ymat[t, ]
   
-  dvec <- t(S) %*% yhat
+  dvec = t(S) %*% yhat
   
-  sol <- solve.QP(
+  sol = solve.QP(
     Dmat = Dmat,
     dvec = dvec,
     Amat = Amat,
@@ -78,17 +83,17 @@ for (t in 1:Tn) {
     meq  = 0
   )
   
-  b_rec_OLSnn[t, ] <- sol$solution
+  b_rec_OLSnn[t, ] = sol$solution
 }
 
 ## Recover full hierarchy
-Y_rec_OLSnn <- t(S %*% t(b_rec_OLSnn))
+Y_rec_OLSnn = t(S %*% t(b_rec_OLSnn))
 
-colnames(Y_rec_OLSnn) <- colnames(Y_base)
-colnames(b_rec_OLSnn) <- colnames(b_base)
+colnames(Y_rec_OLSnn) = colnames(Y_base)
+colnames(b_rec_OLSnn) = colnames(b_base)
 
-Y_rec_OLSnn <- as.data.frame(Y_rec_OLSnn)
-b_rec_OLSnn <- as.data.frame(b_rec_OLSnn)
+Y_rec_OLSnn = as.data.frame(Y_rec_OLSnn)
+b_rec_OLSnn = as.data.frame(b_rec_OLSnn)
 
 # checks
 all(b_rec_OLSnn[, grep("^B_", colnames(b_rec_OLSnn))] >= -0.000001)
@@ -104,49 +109,49 @@ View(round(rbind(Y_obs,
                  rep(NA, n),
                  Y_rec_OLSnn), 1))
 
-write.csv(round(rbind(Y_obs,
-                      rep(NA, n),
-                      Y_base,
-                      rep(NA, n),
-                      Y_rec_OLS,
-                      rep(NA, n),
-                      Y_rec_OLSnn), 1),
-          "OLS.csv")
+# write.csv(round(rbind(Y_obs,
+#                       rep(NA, n),
+#                       Y_base,
+#                       rep(NA, n),
+#                       Y_rec_OLS,
+#                       rep(NA, n),
+#                       Y_rec_OLSnn), 1),
+#           "OLS.csv")
 
 ##########------- WLS v
 #######################################
-sigma2 <- apply(fcast_error, 2, var)
-Winv <- diag(1 / sigma2)
+sigma2 = apply(fcast_error, 2, var)
+Winv = diag(1 / sigma2)
 
 
 ## Unconstrained
-Ymat <- as.matrix(Y_base)
+Ymat = as.matrix(Y_base)
 
-Tn <- nrow(Ymat)
-n  <- ncol(Ymat)
-m  <- ncol(S)
+Tn = nrow(Ymat)
+n  = ncol(Ymat)
+m  = ncol(S)
 
-P  <- ginv(t(S) %*% Winv %*% S) %*% t(S) %*% Winv
-SP <- S %*% P
+P  = ginv(t(S) %*% Winv %*% S) %*% t(S) %*% Winv
+SP = S %*% P
 
-Y_rec_WLS <- t(SP %*% t(Ymat))
+Y_rec_WLS = t(SP %*% t(Ymat))
 
-colnames(Y_rec_WLS) <- colnames(Y_base)
-Y_rec_WLS <- as.data.frame(Y_rec_WLS)
+colnames(Y_rec_WLS) = colnames(Y_base)
+Y_rec_WLS = as.data.frame(Y_rec_WLS)
 
-## Non-negative
-Dmat <- t(S) %*% Winv %*% S
-Dmat <- Dmat + 1e-8 * diag(ncol(S))   # numerical stability
+## Non-negative constraint 
+Dmat = t(S) %*% Winv %*% S
+Dmat = Dmat + 1e-8 * diag(ncol(S))   # numerical stability
 
-b_rec_WLSnn <- matrix(NA, nrow = nrow(Y_base), ncol = ncol(S))
+b_rec_WLSnn = matrix(NA, nrow = nrow(Y_base), ncol = ncol(S))
 
 for (t in 1:nrow(Y_base)) {
   
-  yhat <- as.numeric(Y_base[t, ])
+  yhat = as.numeric(Y_base[t, ])
   
-  dvec <- t(S) %*% Winv %*% yhat
+  dvec = t(S) %*% Winv %*% yhat
   
-  sol <- solve.QP(
+  sol = solve.QP(
     Dmat = Dmat,
     dvec = dvec,
     Amat = Amat,
@@ -154,13 +159,13 @@ for (t in 1:nrow(Y_base)) {
     meq  = 0
   )
   
-  b_rec_WLSnn[t, ] <- sol$solution
+  b_rec_WLSnn[t, ] = sol$solution
 }
 
-Y_rec_WLSnn <- t(S %*% t(b_rec_WLSnn))
+Y_rec_WLSnn = t(S %*% t(b_rec_WLSnn))
 
-colnames(Y_rec_WLSnn) <- colnames(Y_base)
-Y_rec_WLSnn <- as.data.frame(Y_rec_WLSnn)
+colnames(Y_rec_WLSnn) = colnames(Y_base)
+Y_rec_WLSnn = as.data.frame(Y_rec_WLSnn)
 
 # checks
 all(b_rec_WLSnn[, grep("^B_", colnames(b_rec_WLSnn))] >= 0)
@@ -176,47 +181,47 @@ View(round(rbind(Y_obs,
                  rep(NA, n),
                  Y_rec_WLSnn), 1))
 
-write.csv(round(rbind(Y_obs,
-                      rep(NA, n),
-                      Y_base,
-                      rep(NA, n),
-                      Y_rec_WLS,
-                      rep(NA, n),
-                      Y_rec_WLSnn), 1),
-          "WLS.csv")
+# write.csv(round(rbind(Y_obs,
+#                       rep(NA, n),
+#                       Y_base,
+#                       rep(NA, n),
+#                       Y_rec_WLS,
+#                       rep(NA, n),
+#                       Y_rec_WLSnn), 1),
+#           "WLS.csv")
 ########## MinT
 
-W_sample <- cov(fcast_error)
+W_sample = cov(fcast_error)
 W_inv_mint = ginv(W_sample)
 
 ## Unconstrained
-Ymat <- as.matrix(Y_base)
+Ymat = as.matrix(Y_base)
 
-Tn <- nrow(Ymat)
-n  <- ncol(Ymat)
-m  <- ncol(S)
+Tn = nrow(Ymat)
+n  = ncol(Ymat)
+m  = ncol(S)
 
-P  <- ginv(t(S) %*% W_inv_mint %*% S) %*% t(S) %*% W_inv_mint
-SP <- S %*% P
+P  = ginv(t(S) %*% W_inv_mint %*% S) %*% t(S) %*% W_inv_mint
+SP = S %*% P
 
-Y_rec_MinT <- t(SP %*% t(Ymat))
+Y_rec_MinT = t(SP %*% t(Ymat))
 
-colnames(Y_rec_MinT) <- colnames(Y_base)
-Y_rec_MinT <- as.data.frame(Y_rec_MinT)
+colnames(Y_rec_MinT) = colnames(Y_base)
+Y_rec_MinT = as.data.frame(Y_rec_MinT)
 
-## Non-negative
-Dmat <- t(S) %*% W_inv_mint %*% S
-Dmat <- Dmat + 1e-8 * diag(ncol(S))   # numerical stability
+## Non-negative constraint
+Dmat = t(S) %*% W_inv_mint %*% S
+Dmat = Dmat + 1e-8 * diag(ncol(S))   # numerical stability
 
-b_rec_Y_rec_MinTnn <- matrix(NA, nrow = nrow(Y_base), ncol = ncol(S))
+b_rec_Y_rec_MinTnn = matrix(NA, nrow = nrow(Y_base), ncol = ncol(S))
 
 for (t in 1:nrow(Y_base)) {
   
-  yhat <- as.numeric(Y_base[t, ])
+  yhat = as.numeric(Y_base[t, ])
   
-  dvec <- t(S) %*% W_inv_mint %*% yhat
+  dvec = t(S) %*% W_inv_mint %*% yhat
   
-  sol <- solve.QP(
+  sol = solve.QP(
     Dmat = Dmat,
     dvec = dvec,
     Amat = Amat,
@@ -224,13 +229,13 @@ for (t in 1:nrow(Y_base)) {
     meq  = 0
   )
   
-  b_rec_Y_rec_MinTnn[t, ] <- sol$solution
+  b_rec_Y_rec_MinTnn[t, ] = sol$solution
 }
 
-Y_rec_MinTnn <- t(S %*% t(b_rec_Y_rec_MinTnn))
+Y_rec_MinTnn = t(S %*% t(b_rec_Y_rec_MinTnn))
 
-colnames(Y_rec_MinTnn) <- colnames(Y_base)
-Y_rec_MinTnn <- as.data.frame(Y_rec_MinTnn)
+colnames(Y_rec_MinTnn) = colnames(Y_base)
+Y_rec_MinTnn = as.data.frame(Y_rec_MinTnn)
 
 # checks
 all(b_rec_Y_rec_MinTnn[, grep("^B_", colnames(b_rec_Y_rec_MinTnn))] >= 0)
@@ -246,14 +251,14 @@ View(round(rbind(Y_obs,
                  rep(NA, n),
                  Y_rec_MinTnn), 1))
 
-write.csv(round(rbind(Y_obs,
-                      rep(NA, n),
-                      Y_base,
-                      rep(NA, n),
-                      Y_rec_MinT,
-                      rep(NA, n),
-                      Y_rec_MinTnn), 1),
-          "MinT.csv")
+# write.csv(round(rbind(Y_obs,
+#                       rep(NA, n),
+#                       Y_base,
+#                       rep(NA, n),
+#                       Y_rec_MinT,
+#                       rep(NA, n),
+#                       Y_rec_MinTnn), 1),
+#           "MinT.csv")
 
 
 

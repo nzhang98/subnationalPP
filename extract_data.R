@@ -7,11 +7,15 @@ library(bayesLife)
 library(bayesMig)
 library(bayesPop)
 
+### Script containing steps to extract relevant datasets to perform Forecast Reconciliation
+
+# WA county code and names
 location.file = "bayespop_workshop/data/wafips.txt"
 county.codes = read.delim(location.file)$reg_code[-1] #Remove code '53' for Washington State
 county.names = read.delim(location.file)$name[-1]
 
 library(readxl)
+# Regional aggregate historical and forecasts from the OFM for WA
 components.file = "data/ofm_1960_2024_components.xlsx"
 
 agg.births = data.frame(read_excel(components.file, col_names = TRUE, sheet = 5, skip = 3)[-40,-(2:3)])
@@ -34,19 +38,23 @@ row.names(agg.pop) = agg.pop[[1]]
 agg.pop = agg.pop[,-1]
 colnames(agg.pop) = seq(1961,2025)
 
+### OFM county aggregate forecasts from 2007, used to compute in-sample forecast errors
 agg.pop.fcast07 = data.frame(read_excel("data/ofm_2007_pop_county_forecasts_medium.xls", col_names = TRUE,
                                         sheet = 1, skip = 3)[-(41:43),]) 
 row.names(agg.pop.fcast07) = agg.pop.fcast07[[1]]
 agg.pop.fcast07 = agg.pop.fcast07[,-1]
 colnames(agg.pop.fcast07) = c(2000, 2005, seq(2010, 2030))
 
+### OFM county aggregate forecasts from 2012, used as aggregate forecasts from 2016 to reconcile with
 agg.pop.fcast12 = data.frame(read_excel("data/ofm_2012_pop_county_forecasts_medium.xls", col_names = TRUE,
                                         sheet = 1, skip = 4)[-(41:46),]) 
 row.names(agg.pop.fcast12) = agg.pop.fcast12[[1]]
 agg.pop.fcast12 = agg.pop.fcast12[,-1]
 colnames(agg.pop.fcast12) = c(2010, seq(2015, 2040))
+
 ###################
 
+#### Retrieve Observations/Historical data from bayesPop
 subnat.pop.dir = "bayespop_workshop/results_24/pop"
 pop.subnat = get.pop.prediction(subnat.pop.dir)
 pop.aggr = get.pop.aggregation(sim.dir = subnat.pop.dir) 
@@ -63,6 +71,7 @@ for(county.code in county.codes){
 b_obs = do.call(cbind, res_list)
 colnames(b_obs) = col_names
 
+#### Retrieve forecasts from bayesPop, made at year 2013
 subnat.pop.dir = "bayespop_workshop/results_14/pop"
 pop.subnat = get.pop.prediction(subnat.pop.dir)
 pop.aggr = get.pop.aggregation(sim.dir = subnat.pop.dir) 
@@ -89,7 +98,7 @@ colnames(b_base) = col_names
 
 
 
-################### Age groups
+################### Retrieve data disaggregate into age groups
 
 res_list = vector("list", length = 0)
 for(county.code in county.codes){
@@ -115,22 +124,5 @@ for (county.code in county.codes){
 
 df = as.data.frame(do.call(cbind, res_list))
 colnames(df) = col_names
-
-S = rbind(
-  c(1, 1, 1, 1),
-  c(1, 1, 0, 0),
-  c(0, 0, 1, 1),
-  c(1, 0, 0, 0),
-  c(0, 1, 0, 0),
-  c(0, 0, 1, 0),
-  c(0, 0, 0, 1)
-)
-
-S %*% ginv(t(S)%*%S) %*% t(S)
-
-library(MASS)
-S_ginv = ginv(S)
-
-S_ginv %*% S %*% S_ginv
 
 
