@@ -46,11 +46,39 @@ agg.pop.fcast07 = agg.pop.fcast07[,-1]
 colnames(agg.pop.fcast07) = c(2000, 2005, seq(2010, 2030))
 
 ### OFM county aggregate forecasts from 2012, used as aggregate forecasts from 2016 to reconcile with
-agg.pop.fcast12 = data.frame(read_excel("data/ofm_2012_pop_county_forecasts_medium.xls", col_names = TRUE,
+agg.pop.fcast12.med = data.frame(read_excel("data/ofm_2012_pop_county_forecasts_medium.xls", col_names = TRUE,
                                         sheet = 1, skip = 4)[-(41:46),]) 
-row.names(agg.pop.fcast12) = agg.pop.fcast12[[1]]
-agg.pop.fcast12 = agg.pop.fcast12[,-1]
-colnames(agg.pop.fcast12) = c(2010, seq(2015, 2040))
+row.names(agg.pop.fcast12.med) = agg.pop.fcast12.med[[1]]
+agg.pop.fcast12.med = agg.pop.fcast12.med[,-1]
+colnames(agg.pop.fcast12.med) = c(2010, seq(2015, 2040))
+
+agg.pop.fcast12.high = data.frame(read_excel("data/ofm_2012_pop_county_forecasts_high.xls", col_names = TRUE,
+                                            sheet = 1, skip = 4)[-(41:46),]) 
+row.names(agg.pop.fcast12.high) = agg.pop.fcast12.high[[1]]
+agg.pop.fcast12.high = agg.pop.fcast12.high[,-1]
+colnames(agg.pop.fcast12.high) = c(2010, seq(2015, 2040))
+
+agg.pop.fcast12.low = data.frame(read_excel("data/ofm_2012_pop_county_forecasts_low.xls", col_names = TRUE,
+                                             sheet = 1, skip = 4)[-(41:46),]) 
+row.names(agg.pop.fcast12.low) = agg.pop.fcast12.low[[1]]
+agg.pop.fcast12.low = agg.pop.fcast12.low[,-1]
+colnames(agg.pop.fcast12.low) = c(2010, seq(2015, 2040))
+
+diff_df <- function(df) {
+  df_diff <- df
+  df_diff[, -1] <- df[, -1] - df[, -ncol(df)]
+  df_diff[, 1] <- NA  # first year has no lag
+  return(df_diff)
+}
+
+low_diff    <- diff_df(agg.pop.fcast12.low)[4:13]
+medium_diff <- diff_df(agg.pop.fcast12.med)[4:13]
+high_diff   <- diff_df(agg.pop.fcast12.high)[4:13]
+
+z_diff <- qnorm(0.95) - qnorm(0.05)
+
+mu <- medium_diff
+sigma <- ((high_diff - low_diff) / z_diff)
 
 ###################
 
@@ -58,6 +86,8 @@ colnames(agg.pop.fcast12) = c(2010, seq(2015, 2040))
 subnat.pop.dir = "bayespop_workshop/results_24/pop"
 pop.subnat = get.pop.prediction(subnat.pop.dir)
 pop.aggr = get.pop.aggregation(sim.dir = subnat.pop.dir) 
+
+get.pop.exba("G53", pop.aggr)
 
 res_list = vector("list", length = 0)
 for(county.code in county.codes){
